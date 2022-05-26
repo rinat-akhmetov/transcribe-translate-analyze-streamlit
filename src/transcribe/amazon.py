@@ -83,7 +83,7 @@ def check_the_job(job_name: str) -> Optional[dict]:
 
 def transcribe(file_uri: str, language='es-ES', subtitles_folder='./artifacts/subtitles/') -> Optional[dict]:
     project_name = Path(file_uri).name
-    Path(subtitles_folder).mkdir(exist_ok=True)
+    Path(subtitles_folder).mkdir(parents=True, exist_ok=True)
     if not file_uri.startswith('s3://'):
         s3_uri = upload_file_to_s3(file_uri)
     else:
