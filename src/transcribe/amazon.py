@@ -23,10 +23,9 @@ from tqdm import tqdm
 
 from utils import upload_file_to_s3
 
-transcribe_client = boto3.client('transcribe')
-
 
 def transcribe_file(job_name, file_uri, language='es-ES', output_folder='subtitles/'):
+    transcribe_client = boto3.client('transcribe')
     job = check_the_job(job_name)
     if job is None:
         job = transcribe_client.start_transcription_job(
@@ -67,6 +66,7 @@ def transcribe_file(job_name, file_uri, language='es-ES', output_folder='subtitl
 
 
 def check_the_job(job_name: str) -> Optional[dict]:
+    transcribe_client = boto3.client('transcribe')
     try:
         job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
         job = job['TranscriptionJob']
