@@ -36,7 +36,8 @@ def group_items_by_speaker(items: [Item]) -> [Item]:
 
 
 def write_srt_to_file(video_path: str, subtitles_path: str, output_path: str):
-    command = ['ffmpeg', '-y', '-i', video_path, '-vf', f'subtitles={subtitles_path}', output_path]
+    command = ['ffmpeg', '-y', '-i', video_path, '-max_muxing_queue_size', '9999', '-vf', f'subtitles={subtitles_path}',
+               output_path]
     logging.info(f"process {' '.join(command)}")
     result = subprocess.run(command, stdout=subprocess.PIPE)
     logging.debug(result.stdout)
