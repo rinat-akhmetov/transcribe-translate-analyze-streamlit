@@ -5,7 +5,7 @@ description = "Trascribe, translate and analyze"
 authors = ["Rinat Akhmetov <rakhmetov@provectus.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.8,<3.11"
 boto3 = "^1.23.8"
 boto = "^2.49.0"
 tqdm = "^4.64.0"
@@ -15,8 +15,11 @@ numpy = "^1.22.4"
 opencv-python = "^4.5.5"
 requests = "^2.27.1"
 streamlit = "^1.9.0"
+scipy = "^1.8.1"
+insightface = "^0.6.2"
 
 [tool.poetry.dev-dependencies]
+jupyterlab = "^3.4.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

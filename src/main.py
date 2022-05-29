@@ -5,10 +5,13 @@ from fire import Fire
 from joblib import Parallel, delayed
 
 from dto import Item, TranslatedItem
+from faces.person_match import load_people
 from subtitles.subtitles import create_subtitle, create_subtitles_file, write_srt_to_file
 from transcribe.amazon import transcribe
 from translate.translate import translate_item
 from utils import create_markdown
+from faces.faces import process as process_faces
+from faces.utils import Person, Face
 
 os.environ['AWS_PROFILE'] = 'EDU'
 os.environ['AWS_REGION'] = 'us-east-1'
@@ -36,4 +39,8 @@ def process(video_path: str, source_language='es-ES', target_language: str = 'en
 
 
 if __name__ == '__main__':
-    Fire(process)
+    Fire({
+        'proces': process,
+        'process_faces': process_faces,
+    }
+    )
