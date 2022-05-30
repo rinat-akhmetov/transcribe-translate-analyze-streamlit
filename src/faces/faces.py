@@ -1,6 +1,7 @@
+from typing import List, Dict
+
 import cv2
 import numpy as np
-from fire import Fire
 from insightface.app import FaceAnalysis
 from tqdm import tqdm
 
@@ -29,7 +30,7 @@ def diag_bbox(face: Face) -> float:
     return np.linalg.norm(face.bbox[:2] - face.bbox[2:])
 
 
-def create_people(img: np.array, faces: list[Face]) -> list[Person]:
+def create_people(img: np.array, faces: List[Face]) -> List[Person]:
     """
     Create Person objects from list of Face objects
     :param img:
@@ -45,7 +46,7 @@ def create_people(img: np.array, faces: list[Face]) -> list[Person]:
     return fd_sorted
 
 
-def process_media(image: np.array) -> list[Person]:
+def process_media(image: np.array) -> List[Person]:
     """
     Process media and return list of Person objects
     :param image:
@@ -66,13 +67,12 @@ def generate_frames(file_path) -> np.array:
     cap = cv2.VideoCapture(file_path)
 
     pbar = tqdm(total=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-    while True:
+    while cap.isOpened():
         pbar.update(1)
         ret, frame = cap.read()
-        if ret:
-            yield frame
-        else:
+        if not ret:
             break
+        yield frame
     cap.release()
 
 
@@ -84,7 +84,7 @@ def process(file_path, threshold=0.6):
     """
     # read video by opencv
     frame_number = 0
-    persons: dict[str, Person] = {}
+    persons: Dict[str, Person] = {}
 
     for frame in generate_frames(file_path):
         frame_number += 1
@@ -121,7 +121,3 @@ def process(file_path, threshold=0.6):
     print('frame_number', frame_number)
     with open('frame_number.txt', 'w') as f:
         f.write(str(frame_number))
-
-
-if __name__ == '__main__':
-    Fire(process)

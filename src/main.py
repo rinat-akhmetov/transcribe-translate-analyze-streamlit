@@ -5,13 +5,12 @@ from fire import Fire
 from joblib import Parallel, delayed
 
 from dto import Item, TranslatedItem
-from faces.person_match import load_people
+from faces.faces import process as process_faces
+from faces.utils import save_translated_items
 from subtitles.subtitles import create_subtitle, create_subtitles_file, write_srt_to_file
 from transcribe.amazon import transcribe
 from translate.translate import translate_item
 from utils import create_markdown
-from faces.faces import process as process_faces
-from faces.utils import Person, Face
 
 os.environ['AWS_PROFILE'] = 'EDU'
 os.environ['AWS_REGION'] = 'us-east-1'
@@ -29,6 +28,7 @@ def process(video_path: str, source_language='es-ES', target_language: str = 'en
     grouped_items: list[Item] = create_subtitle(transcription, subtitles_file_path)
     translated_items: list[TranslatedItem] = Parallel(n_jobs=15)(
         delayed(translate_item)(item, source_language, target_language) for item in grouped_items)
+    save_translated_items(subtitles_file_path.parent / 'translated_item', translated_items)
     subtitles_file_path = Path(video_path).with_suffix('.en.srt')
     create_subtitles_file(str(subtitles_file_path), translated_items)
     output_path = str(Path(video_path).with_suffix('.en.mp4'))
@@ -40,7 +40,7 @@ def process(video_path: str, source_language='es-ES', target_language: str = 'en
 
 if __name__ == '__main__':
     Fire({
-        'proces': process,
+        'process': process,
         'process_faces': process_faces,
     }
     )

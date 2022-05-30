@@ -1,3 +1,4 @@
+import pickle
 from typing import List
 
 
@@ -10,7 +11,13 @@ class Alternative:
         self.content = content
 
 
-class Item:
+class IItem:
+    def save(self, file_path):
+        with open(file_path, 'wb') as handle:
+            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+class Item(IItem):
     start_time: str
     end_time: str
     _type: str
@@ -46,7 +53,7 @@ class Item:
         return self._type
 
 
-class TranslatedItem:
+class TranslatedItem(IItem):
     start_time: str
     end_time: str
     speaker_label: str
