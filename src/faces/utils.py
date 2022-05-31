@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from dto import TranslatedItem
+from dto import Item
 
 
 class Face(NamedTuple):
@@ -98,7 +98,7 @@ def save_people_faces(save_directory, persons: dict[str, Person], top_k=5):
         person.save(Path(save_directory) / f'{name}.pickle')
 
 
-def save_translated_items(save_directory, translated_items: list[TranslatedItem]):
+def save_translated_items(save_directory, translated_items: list[Item]):
     Path(save_directory).mkdir(parents=True, exist_ok=True)
     for translated_item in translated_items:
         translated_item.save(Path(save_directory) / f'translated_item-{id(translated_items)}.pickle')

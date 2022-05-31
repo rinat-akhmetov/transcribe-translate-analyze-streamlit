@@ -7,12 +7,12 @@ import boto3
 from fire import Fire
 from tqdm import tqdm
 
-from dto import Item, SpeakerLabel
+from dto import AWSItem, SpeakerLabel
 from transcribe.amazon import transcribe
 
 
-def group_items_by_speaker(items: [Item]) -> [Item]:
-    speakers: List[Item] = []
+def group_items_by_speaker(items: [AWSItem]) -> [AWSItem]:
+    speakers: List[AWSItem] = []
     current = items[0]
     result = [items[0]]
     for item in items[1:]:
@@ -53,7 +53,7 @@ def format_time_for_subtitles(time: float) -> str:
     return f'{hours:02}:{minutes:02}:{seconds:02},{milliseconds:03}'
 
 
-def create_subtitles_file(file_path: str, grouped_items: [Item]):
+def create_subtitles_file(file_path: str, grouped_items: [AWSItem]):
     print(f'Creating subtitles file {file_path}')
     with open(file_path, 'w') as f:
         for index, item in enumerate(tqdm(grouped_items)):
@@ -62,18 +62,17 @@ def create_subtitles_file(file_path: str, grouped_items: [Item]):
             f.write(f'{item.speaker_label}: {item.content()}\n\n')
 
 
-def create_subtitle(response, subtitles_file_path) -> List[Item]:
+def create_subtitle(response) -> List[AWSItem]:
     """
     Create a subtitle file from the response of the Transcribe API
     :param response:
-    :param subtitles_file_path:
     :return:
     """
     items_dict = {}
     items = []
     for item in tqdm(response['results']['items']):
         try:
-            i = Item(**item)
+            i = AWSItem(**item)
             items_dict[i.start_time] = i
             items.append(i)
         except Exception as e:
@@ -92,7 +91,6 @@ def create_subtitle(response, subtitles_file_path) -> List[Item]:
         for item in speaker_label.items:
             items_dict[item.start_time].speaker_label = speaker_label.speaker_label
     grouped_items = group_items_by_speaker(items)
-    create_subtitles_file(subtitles_file_path, grouped_items)
     return grouped_items
 
 

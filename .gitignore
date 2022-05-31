@@ -133,3 +133,4 @@ images/
 artifacts/
 .idea/
 cache/
+.streamlit/

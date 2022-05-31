@@ -7,7 +7,7 @@ from pathlib import Path
 import boto3
 from botocore.exceptions import ClientError
 
-from dto import Item
+from dto import AWSItem
 
 
 def check_s3_file(bucket_name, project_name):
@@ -29,7 +29,7 @@ def upload_file_to_s3(audio_path: str, bucket_name: str = 'lokoai-lambdas-demo')
     return f's3://{bucket_name}/{project_name}'
 
 
-def create_markdown(items: list[Item]):
+def create_markdown(items: list[AWSItem]):
     """
     create markdown from items
     :param items:

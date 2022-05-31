@@ -4,7 +4,7 @@ from pathlib import Path
 from fire import Fire
 from joblib import Parallel, delayed
 
-from dto import Item, TranslatedItem
+from dto import AWSItem, Item
 from faces.faces import process as process_faces
 from faces.utils import save_translated_items
 from subtitles.subtitles import create_subtitle, create_subtitles_file, write_srt_to_file
@@ -25,8 +25,8 @@ def process(video_path: str, source_language='es-ES', target_language: str = 'en
 
     subtitles_file_path = Path(video_path).with_suffix('.srt')
 
-    grouped_items: list[Item] = create_subtitle(transcription, subtitles_file_path)
-    translated_items: list[TranslatedItem] = Parallel(n_jobs=15)(
+    grouped_items: list[AWSItem] = create_subtitle(transcription, subtitles_file_path)
+    translated_items: list[Item] = Parallel(n_jobs=15)(
         delayed(translate_item)(item, source_language, target_language) for item in grouped_items)
     save_translated_items(subtitles_file_path.parent / 'translated_item', translated_items)
     subtitles_file_path = Path(video_path).with_suffix('.en.srt')

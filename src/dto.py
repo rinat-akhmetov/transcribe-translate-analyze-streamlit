@@ -11,19 +11,20 @@ class Alternative:
         self.content = content
 
 
-class IItem:
-    def save(self, file_path):
-        with open(file_path, 'wb') as handle:
-            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-class Item(IItem):
+class Item:
     start_time: str
     end_time: str
-    _type: str
-    alternatives: List[Alternative]
     speaker_label: str
-    translation: str
+    _content: str
+
+    def __init__(self, speaker_label: str, start_time: str = None, end_time: str = None):
+        self.start_time = None
+        if start_time is not None:
+            self.start_time = float(start_time)
+        self.end_time = None
+        if end_time is not None:
+            self.end_time = float(end_time)
+        self.speaker_label = speaker_label
 
     def __str__(self):
         return f'{self.start_time} - {self.end_time} {self.content()}'
@@ -31,46 +32,32 @@ class Item(IItem):
     def __repr__(self):
         return self.__str__()
 
+    def content(self):
+        return self._content
+
+    def save(self, file_path):
+        with open(file_path, 'wb') as handle:
+            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+class AWSItem(Item):
+    _type: str
+    alternatives: List[Alternative]
+
     def content(self) -> str:
         return ' '.join([alternative.content for alternative in self.alternatives])
 
     def __init__(self, type: str, alternatives: List[Alternative], start_time: str = None, end_time: str = None,
                  speaker_label: str = None):
-        self.start_time = None
-        if start_time is not None:
-            self.start_time = float(start_time)
-        self.end_time = None
-        if end_time is not None:
-            self.end_time = float(end_time)
         self._type = type
         self.alternatives = []
-        self.speaker_label = speaker_label
+        super().__init__(speaker_label, start_time, end_time)
         for alternative in alternatives:
             self.alternatives.append(Alternative(**alternative))
 
     @property
     def type(self):
         return self._type
-
-
-class TranslatedItem(IItem):
-    start_time: str
-    end_time: str
-    speaker_label: str
-    translation: str
-
-    def __init__(self, type: str, speaker_label: str, start_time: str = None, end_time: str = None):
-        self.start_time = None
-        if start_time is not None:
-            self.start_time = float(start_time)
-        self.end_time = None
-        if end_time is not None:
-            self.end_time = float(end_time)
-        self._type = type
-        self.speaker_label = speaker_label
-
-    def content(self) -> str:
-        return self.translation
 
 
 class SpeakerItem:
