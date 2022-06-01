@@ -15,7 +15,7 @@ os.environ['AWS_REGION'] = 'us-east-1'
 os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 
 
-@st.cache
+# @st.cache(suppress_st_warning=True)
 def process_video(parent_component, video_path: str, source_language='es-ES', target_language: str = 'en-US'):
     progress_bar = st.progress(0)
     step = 100 // 6
@@ -96,19 +96,19 @@ def main_app():
             if st.button('ReProcess'):
                 print('reprocess video')
                 with st.spinner(text='Re-process Video'):
-                    source_items, translated_items = reprocess(
+                    source_items, translated_items, video_path = reprocess(
                         st, st.session_state.video_path, st.session_state.source_items,
                         st.session_state.source_texts, st.session_state.translated_items,
                         st.session_state.translated_texts, source_language
                     )
-                    # st.session_state.video_path = video_path
+                    st.session_state.video_path = video_path
                     st.session_state.source_items = source_items
                     st.session_state.translated_items = translated_items
         if 'video_path' in st.session_state:
-            video_container.empty()
+            # video_container.empty()
             video_container.video(st.session_state.video_path)
         if 'source_items' in st.session_state:
-            text_container.empty()
+            # text_container.empty()
             st.session_state.source_texts, st.session_state.translated_texts = set_content(
                 text_container, st.session_state.source_items,
                 st.session_state.translated_items,
@@ -171,7 +171,7 @@ def reprocess(parent_component, video_path: str, source_items: list[Item],
     progress_bar.progress(4 * step)
 
     progress_bar.empty()
-    return source_items, translated_items
+    return source_items, translated_items, output_path
 
 
 def language_component():
