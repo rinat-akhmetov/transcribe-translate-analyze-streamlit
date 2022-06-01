@@ -82,30 +82,38 @@ def main_app():
 
     is_valid, video_path = file_uploader_component(st.sidebar)
     video_container = st.container()
-    col1, col2, col3 = st.columns(3)
+    col1, col3 = st.columns(2)
+    info = st.container()
     text_container = st.container()
-    process_video_button = col1.button('Process Video')
-    reprocess_video_button = col2.button('Re-process Video')
 
     if is_valid:
         st.session_state.video_path = video_path
-        if process_video_button:
-            with st.spinner(text='Preparing Video'):
-                video_path, source_items, translated_items = process_video(st, video_path, source_language)
-                st.session_state.video_path = video_path
-                st.session_state.source_items = source_items
-                st.session_state.translated_items = translated_items
         if 'source_texts' in st.session_state:
+            reprocess_video_button = col1.button('Process Video')
             if reprocess_video_button:
-                with st.spinner(text='Re-process Video'):
-                    source_items, translated_items, video_path = reprocess(
-                        st, st.session_state.video_path, st.session_state.source_items,
-                        st.session_state.source_texts, st.session_state.translated_items,
-                        st.session_state.translated_texts, source_language
-                    )
-                    st.session_state.video_path = video_path
-                    st.session_state.source_items = source_items
-                    st.session_state.translated_items = translated_items
+                with info:
+                    with st.spinner(text='Re-process Video'):
+                        source_items, translated_items, video_path = reprocess(
+                            info, st.session_state.video_path,
+                            st.session_state.source_items,
+                            st.session_state.source_texts,
+                            st.session_state.translated_items,
+                            st.session_state.translated_texts,
+                            source_language
+                        )
+                        st.session_state.video_path = video_path
+                        st.session_state.source_items = source_items
+                        st.session_state.translated_items = translated_items
+        else:
+            process_video_button = col1.button('Process Video')
+            if process_video_button:
+                with info:
+                    with st.spinner(text='Preparing Video'):
+                        video_path, source_items, translated_items = process_video(info, video_path, source_language)
+                        st.session_state.video_path = video_path
+                        st.session_state.source_items = source_items
+                        st.session_state.translated_items = translated_items
+
         if 'video_path' in st.session_state:
             with open(st.session_state.video_path, 'rb') as f:
                 col3.download_button('Download video', f, file_name='output.mp4')
@@ -115,11 +123,10 @@ def main_app():
             st.session_state.source_texts, st.session_state.translated_texts = set_content(
                 text_container, st.session_state.source_items,
                 st.session_state.translated_items,
-                st.session_state.video_path
             )
 
 
-def set_content(text_container, source_items, translated_items, video_path):
+def set_content(text_container, source_items, translated_items):
     with text_container:
         source_column, translated_column = st.columns(2)
         source_texts = []
