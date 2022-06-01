@@ -18,7 +18,7 @@ os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 # @st.cache(suppress_st_warning=True)
 def process_video(parent_component, video_path: str, source_language='es-ES', target_language: str = 'en-US'):
     progress_bar = st.progress(0)
-    step = 100 // 6
+    step = 100 // 5
     transcription = transcribe_video_step(parent_component, source_language, video_path)
     progress_bar.progress(1 * step)
     grouped_items = create_subtitles_step(parent_component, transcription, video_path)
@@ -29,10 +29,10 @@ def process_video(parent_component, video_path: str, source_language='es-ES', ta
     progress_bar.progress(4 * step)
     subtitles_file_path = create_subtitles_file_step(parent_component, video_path, translated_items)
     progress_bar.progress(5 * step)
-    output_path = burn_subtitles_to_video_step(parent_component, video_path, subtitles_file_path)
-    progress_bar.progress(6 * step)
+    # output_path = burn_subtitles_to_video_step(parent_component, video_path, subtitles_file_path)
+    # progress_bar.progress(6 * step)
     progress_bar.empty()
-    return output_path, grouped_items, translated_items
+    return subtitles_file_path, grouped_items, translated_items
 
 
 def transcribe_video_step(parent_component, source_language, video_path):
@@ -82,33 +82,36 @@ def main_app():
 
     is_valid, video_path = file_uploader_component(st.sidebar)
     video_container = st.container()
+    col1, col2, col3 = st.columns(3)
     text_container = st.container()
+    process_video_button = col1.button('Process Video')
+    reprocess_video_button = col2.button('Re-process Video')
+    download_video_with_subtitles = col3.button('Download video with subtitles')
+
     if is_valid:
-        if st.button('Process Video'):
-            print('process video')
+        st.session_state.video_path = video_path
+        if process_video_button:
             with st.spinner(text='Preparing Video'):
-                video_path, source_items, translated_items = process_video(st, video_path, source_language)
-                st.session_state.video_path = video_path
+                subtitles_file_path, source_items, translated_items = process_video(st, video_path, source_language)
+                st.session_state.subtitles_file_path = subtitles_file_path
                 st.session_state.source_items = source_items
                 st.session_state.translated_items = translated_items
-            print(len(source_items), len(translated_items))
         if 'source_texts' in st.session_state:
-            if st.button('ReProcess'):
-                print('reprocess video')
+            if reprocess_video_button:
                 with st.spinner(text='Re-process Video'):
-                    source_items, translated_items, video_path = reprocess(
+                    source_items, translated_items, subtitles_file_path = reprocess(
                         st, st.session_state.video_path, st.session_state.source_items,
                         st.session_state.source_texts, st.session_state.translated_items,
                         st.session_state.translated_texts, source_language
                     )
-                    st.session_state.video_path = video_path
+                    st.session_state.subtitles_file_path = subtitles_file_path
                     st.session_state.source_items = source_items
                     st.session_state.translated_items = translated_items
+        if download_video_with_subtitles:
+            prepare_for_download(st, st.session_state.video_path, st.session_state.subtitles_file_path)
         if 'video_path' in st.session_state:
-            # video_container.empty()
             video_container.video(st.session_state.video_path)
         if 'source_items' in st.session_state:
-            # text_container.empty()
             st.session_state.source_texts, st.session_state.translated_texts = set_content(
                 text_container, st.session_state.source_items,
                 st.session_state.translated_items,
@@ -116,9 +119,14 @@ def main_app():
             )
 
 
+def prepare_for_download(parent_component, video_path, subtitles_file_path):
+    output_path = burn_subtitles_to_video_step(parent_component, video_path, subtitles_file_path)
+    with open(output_path, 'rb') as f:
+        parent_component.download_button('Download Zip', f, file_name='output.mp4')
+
+
 def set_content(text_container, source_items, translated_items, video_path):
     with text_container:
-        print('show video', video_path)
         source_column, translated_column = st.columns(2)
         source_texts = []
         translated_texts = []
@@ -153,7 +161,7 @@ def reprocess(parent_component, video_path: str, source_items: list[Item],
               translated_items: list[Item], translated_text: list[str], source_language='es-ES',
               target_language: str = 'en-US'):
     progress_bar = st.progress(0)
-    step = 100 // 4
+    step = 100 // 3
     is_changed, source_items = update_source_items(source_items, source_texts)
     progress_bar.progress(1 * step)
     if is_changed:
@@ -167,11 +175,11 @@ def reprocess(parent_component, video_path: str, source_items: list[Item],
             return True
     subtitles_file_path = create_subtitles_file_step(parent_component, video_path, translated_items)
     progress_bar.progress(3 * step)
-    output_path = burn_subtitles_to_video_step(parent_component, video_path, subtitles_file_path)
-    progress_bar.progress(4 * step)
+    # output_path = burn_subtitles_to_video_step(parent_component, video_path, subtitles_file_path)
+    # progress_bar.progress(4 * step)
 
     progress_bar.empty()
-    return source_items, translated_items, output_path
+    return source_items, translated_items, subtitles_file_path
 
 
 def language_component():
