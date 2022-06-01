@@ -7,7 +7,7 @@ import boto3
 from fire import Fire
 from tqdm import tqdm
 
-from dto import AWSItem, SpeakerLabel
+from dto import AWSItem, SpeakerLabel, Item
 from transcribe.amazon import transcribe
 
 
@@ -62,7 +62,7 @@ def create_subtitles_file(file_path: str, grouped_items: [AWSItem]):
             f.write(f'{item.speaker_label}: {item.content()}\n\n')
 
 
-def create_subtitle(response) -> List[AWSItem]:
+def create_subtitle(response) -> List[Item]:
     """
     Create a subtitle file from the response of the Transcribe API
     :param response:
@@ -91,7 +91,17 @@ def create_subtitle(response) -> List[AWSItem]:
         for item in speaker_label.items:
             items_dict[item.start_time].speaker_label = speaker_label.speaker_label
     grouped_items = group_items_by_speaker(items)
-    return grouped_items
+    result_items = []
+    for grouped_item in grouped_items:
+        item = Item(
+            start_time=grouped_item.start_time,
+            end_time=grouped_item.end_time,
+            speaker_label=grouped_item.speaker_label
+        )
+        item._content = grouped_item.content()
+        result_items.append(item)
+
+    return result_items
 
 
 def upload_file_to_s3(file_path: str, bucket_name: str, s3_key: str):

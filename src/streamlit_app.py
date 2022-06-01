@@ -15,7 +15,8 @@ os.environ['AWS_REGION'] = 'us-east-1'
 os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 
 
-def process(parent_component, video_path: str, source_language='es-ES', target_language: str = 'en-US'):
+@st.cache
+def process_video(parent_component, video_path: str, source_language='es-ES', target_language: str = 'en-US'):
     progress_bar = st.progress(0)
     step = 100 // 6
     transcription = transcribe_video_step(parent_component, source_language, video_path)
@@ -43,7 +44,7 @@ def transcribe_video_step(parent_component, source_language, video_path):
 
 def create_subtitles_step(parent_component, transcription, video_path):
     message = parent_component.info('creating subtitles...')
-    grouped_items: list[AWSItem] = create_subtitle(transcription)
+    grouped_items: list[Item] = create_subtitle(transcription)
     subtitles_file_path = Path(video_path).with_suffix('.srt')
     create_subtitles_file(str(subtitles_file_path), grouped_items)
     message.empty()
@@ -80,41 +81,97 @@ def main_app():
     source_language = language_component()
 
     is_valid, video_path = file_uploader_component(st.sidebar)
-
-    source_texts = []
-    source_items: list[AWSItem] = []
-    translated_items: list[Item] = []
-    translated_texts = []
+    video_container = st.container()
+    text_container = st.container()
     if is_valid:
-        with st.spinner(text='Preparing Video'):
-            video_path, source_items, translated_items = process(st, video_path, source_language)
-            print('show video', video_path)
-            st.video(video_path)
-            source_column, translated_column = st.columns(2)
-            for item in source_items:
-                source_texts.append(
-                    source_column.text_area(label=f'{item.speaker_label}', value=item.content())
-                )
-            for item in translated_items:
-                translated_texts.append(
-                    translated_column.text_area(label=f'{item.speaker_label}', value=item.content()))
-            # st.balloons()
-        # if st.button('ReProcess'):
-        #     reprocess(st, video_path, source_items, translated_items, source_language)
+        if st.button('Process Video'):
+            print('process video')
+            with st.spinner(text='Preparing Video'):
+                video_path, source_items, translated_items = process_video(st, video_path, source_language)
+                st.session_state.video_path = video_path
+                st.session_state.source_items = source_items
+                st.session_state.translated_items = translated_items
+            print(len(source_items), len(translated_items))
+        if 'source_texts' in st.session_state:
+            if st.button('ReProcess'):
+                print('reprocess video')
+                with st.spinner(text='Re-process Video'):
+                    source_items, translated_items = reprocess(
+                        st, st.session_state.video_path, st.session_state.source_items,
+                        st.session_state.source_texts, st.session_state.translated_items,
+                        st.session_state.translated_texts, source_language
+                    )
+                    # st.session_state.video_path = video_path
+                    st.session_state.source_items = source_items
+                    st.session_state.translated_items = translated_items
+        if 'video_path' in st.session_state:
+            video_container.empty()
+            video_container.video(st.session_state.video_path)
+        if 'source_items' in st.session_state:
+            text_container.empty()
+            st.session_state.source_texts, st.session_state.translated_texts = set_content(
+                text_container, st.session_state.source_items,
+                st.session_state.translated_items,
+                st.session_state.video_path
+            )
 
 
-def reprocess(parent_component, video_path: str, grouped_items: list[Item],
-              translated_items: list[Item], source_language='es-ES',
+def set_content(text_container, source_items, translated_items, video_path):
+    with text_container:
+        print('show video', video_path)
+        source_column, translated_column = st.columns(2)
+        source_texts = []
+        translated_texts = []
+        for item in source_items:
+            source_texts.append(
+                source_column.text_area(label=f'{item.speaker_label}', value=item.content(), on_change=None)
+            )
+        for item in translated_items:
+            translated_texts.append(
+                translated_column.text_area(label=f'{item.speaker_label}', value=item.content(), on_change=None)
+            )
+        return source_texts, translated_texts
+
+
+def update_source_items(source_items: list[Item], source_text: list[str]):
+    if len(source_text) == 0:
+        return False
+    assert len(source_items) == len(source_text), 'source_items and source_text must have the same length'
+    is_updated = False
+    for i, item in enumerate(source_items):
+        if item.content() != source_text[i]:
+            print('item has been changed to ', source_text[i])
+            print('item was', item.content())
+            item._content = source_text[i]
+            print('item become', item.content())
+            is_updated = True
+    return is_updated, source_items
+
+
+def reprocess(parent_component, video_path: str, source_items: list[Item],
+              source_texts: list[str],
+              translated_items: list[Item], translated_text: list[str], source_language='es-ES',
               target_language: str = 'en-US'):
     progress_bar = st.progress(0)
-    step = 100 // 5
-    translated_items = translate_items_step(parent_component, grouped_items, source_language, target_language)
-
+    step = 100 // 4
+    is_changed, source_items = update_source_items(source_items, source_texts)
+    progress_bar.progress(1 * step)
+    if is_changed:
+        translated_items = translate_items_step(parent_component, source_items, source_language, target_language)
+        progress_bar.progress(2 * step)
+    else:
+        is_updates, translated_items = update_source_items(translated_items, translated_text)
+        if is_updates:
+            parent_component.info('Nothing changed')
+            progress_bar.empty()
+            return True
     subtitles_file_path = create_subtitles_file_step(parent_component, video_path, translated_items)
+    progress_bar.progress(3 * step)
     output_path = burn_subtitles_to_video_step(parent_component, video_path, subtitles_file_path)
+    progress_bar.progress(4 * step)
 
     progress_bar.empty()
-    return output_path, grouped_items, translated_items
+    return source_items, translated_items
 
 
 def language_component():
@@ -130,7 +187,6 @@ def file_uploader_component(parent_component):
     if uploaded_file is not None:
         is_valid = True
         with st.spinner(text='Uploading...'):
-            # st.sidebar.video(uploaded_file)
             Path(os.path.join("data", "videos")).mkdir(parents=True, exist_ok=True)
 
             with open(os.path.join("data", "videos", uploaded_file.name), "wb") as f:
