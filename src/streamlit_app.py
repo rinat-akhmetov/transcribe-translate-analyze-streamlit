@@ -4,7 +4,7 @@ from pathlib import Path
 import streamlit as st
 from joblib import Parallel, delayed
 
-from dto import AWSItem, Item
+from dto import Item
 from subtitles.subtitles import create_subtitle, create_subtitles_file, write_srt_to_file
 from transcribe.amazon import transcribe
 from translate.translate import translate_item
